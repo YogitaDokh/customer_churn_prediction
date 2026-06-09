@@ -19,7 +19,7 @@ except Exception as e:
 GENDER_MAP = {"Female": 0, "Male": 1, "Other": 2}
 SUBSCRIPTION_MAP = {"Basic": 0, "Standard": 1, "Premium": 2}
 
-# Re-engineered HTML Template with standard Tailwind CSS Play CDN
+# Re-engineered HTML Template with clean string concatenation to avoid escaping bugs
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
@@ -185,17 +185,19 @@ HTML_TEMPLATE = """
                     
                     result.probabilities.forEach((prob, idx) => {
                         const percentage = (prob * 100).toFixed(1);
-                        probContainer.innerHTML += `
-                            <div class="space-y-1">
-                                <div class="flex justify-between text-xs text-slate-300 font-normal">
-                                    <span>Class \${idx}</span>
-                                    <span class="font-bold text-indigo-400">\${percentage}%</span>
-                                </div>
-                                <div class="w-full bg-slate-700 rounded-full h-1.5 overflow-hidden">
-                                    <div class="bg-gradient-to-r from-indigo-500 to-cyan-400 h-1.5 rounded-full" style="width: \${percentage}%"></div>
-                                </div>
-                            </div>
-                        `;
+                        
+                        // Using classic concatenation to completely avoid template-literal character clashing with python
+                        let htmlRow = '<div class="space-y-1">';
+                        htmlRow += '  <div class="flex justify-between text-xs text-slate-300 font-normal">';
+                        htmlRow += '    <span>Class ' + idx + '</span>';
+                        htmlRow += '    <span class="font-bold text-indigo-400">' + percentage + '%</span>';
+                        htmlRow += '  </div>';
+                        htmlRow += '  <div class="w-full bg-slate-700 rounded-full h-1.5 overflow-hidden">';
+                        htmlRow += '    <div class="bg-gradient-to-r from-indigo-500 to-cyan-400 h-1.5 rounded-full" style="width: ' + percentage + '%"></div>';
+                        htmlRow += '  </div>';
+                        htmlRow += '</div>';
+                        
+                        probContainer.innerHTML += htmlRow;
                     });
                 } else {
                     placeholder.classList.remove('hidden');
@@ -225,14 +227,14 @@ def predict():
     try:
         data = request.json
         
-        # Read city text and safely map to numerical float
+        # Read city text and map to numerical value dynamically
         raw_city = str(data.get("city", "Other")).strip().lower()
         encoded_city = abs(hash(raw_city)) % 5
         
         encoded_gender = GENDER_MAP.get(data.get("gender"), 0)
         encoded_subscription = SUBSCRIPTION_MAP.get(data.get("subscription_type"), 0)
         
-        # Feature vector matching model structure layout
+        # Feature array matching model layout precisely
         features = [
             float(data.get("age", 0)),
             float(encoded_gender),
@@ -260,4 +262,6 @@ def predict():
         return jsonify({"success": False, "error": str(e)}), 400
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    # Ensure standard binding to environment variable port for Render
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
